@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<title>AspNetIntervalTask Sample Site</title>
+<style>
+body, td, th {
+	font-family: Verdana;
+	font-size: 10pt;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+td {
+	padding: 0 0 10px 2px;
+	border: 0;
+	margin: 0;
+}
+</style>
+</head>
+<body>
+
+<table>
+<tr><td>Timer started</td><td id=TimerStarted></td></tr>
+<tr><td>Timer last wokeup</td><td id=TimerWokeup></td></tr>
+<tr><td>Last Task Started</td><td id=TaskStarted></td></tr>
+<tr><td>Last Task Ended</td><td id=TaskEnded></td></tr>
+<tr><td>Counter</td><td id=Counter></td></tr>
+</table>
+
+<p>This page monitors the background IntervalTask.
+</p>
+
+<p>Every 5 seconds the IntervalTask wakes up and attempts to kick off the task. To see the task being built, open /App.cs - it's called from the Init() method (which is called from Global.asax.cs).
+</p>
+
+<p>
+The work here is faked. The Task in this case just performs 10 units of "work," faked as Thread.Sleep() commands. How long the 10 sleeps take varies (like a varied real-world work load would), by a simple random number between 100-2000ms. You'll see the timer wakeup every 5 seconds, and occasionally go back to sleep because the workload hasn't completed. Once the
+worker thread finishes, the next wakeup will cause the work to kick off again.
+</p>
+
+<script src="/ui/jquery.js"></script>
+<script>
+function post(url, data, success) {
+	$.ajax({
+		url: url,
+		type: 'POST',
+		data: data,
+		dataType: 'json',
+		success: success
+	});
+}
+
+Page = {
+	interval: 0,
+
+	init: function() {
+		Page.interval = setInterval(function() {
+			post('/Home/Stat', null, function(r) {
+				for(var p in r) {
+					$('#' + p).text(r[p]);
+				}
+			});
+		}, 1000);
+	}
+};
+
+Page.init();
+</script>
+</body>
+</html>

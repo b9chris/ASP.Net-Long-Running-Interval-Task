@@ -1,0 +1,25 @@
+ASP.Net Long-Running Interval Task
+
+
+Copyright 2011 Chris Moschini, Brass Nine Design
+
+This code is licensed under the LGPL or MIT license, whichever you prefer.
+
+If neither is compatible with your project, contact me at chris@brass9.com, and I'll happily license it to you under whatever it is that meets your licensing restrictions.
+
+
+This library is meant to run a task on a regular interval in the background of an ASP.Net app. This is a simple way to skip the install/configuration burden of a Windows Service, Task Scheduler task, or Azure Worker.
+
+In the background it uses a standard System.Timer to build a background thread running at BelowNormal priority (to avoid superseding any Request/ThreadPool threads), and runs the background task there. This ensures you can do things with the Thread like Sleep, block, and Join without concern about harming the ThreadPool or impairing the ability of the server to service requests.
+
+I've personally worked on several ASP.Net projects where this sort of long-running task was needed, and the typical answer was "Use a Windows Service; ASP.Net tasks aren't meant to run long." Inevitably configuring that Windows Service created a major configuration burden that was never sorted out properly. Two copies would end up running creating major problems in the data or overwrites, one would refuse to start because of insufficient permissions, deployment would fail because of permission problems, or someone would have to remember to login and manually install the new Service each time a deploy occurred - inevitably a missed detail resulting in old code working on data it shouldn't be.
+
+Using this library all of that goes out the window in favor of a conventional deployment. You can do a standard Publish from Visual Studio and the overwrite of Web.Config will restart the app. In a typical usage scenario, the IntervalTask is setup in Application_Start end finished in Application_End, causing it to restart when the application does (typically during a deploy).
+
+There are 2 major caveats to this. One, ASP.Net is configured in IIS by default to recycle every 29 hours. This is easily resolved by modifying the Application Pool your app runs in to never do a timed recycle (set the interval to 0).
+
+Two, the app doesn't technically start until the first request. In situations where you for example patch a server, a site with low traffic may not start for hours or even days, meaning the timer is dormant. You can resolve this with IIS 7.5 and a couple configuration tweaks:
+
+http://weblogs.asp.net/scottgu/archive/2009/09/15/auto-start-asp-net-applications-vs-2010-and-net-4-0-series.aspx
+
+Of course if you don't have access to IIS configuration or aren't using IIS 7.5, these 2 caveats may be very minor - if your site gets regular traffic, the timer will generally be running, even if it gets recycled periodically.
