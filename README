@@ -10,16 +10,26 @@ If neither is compatible with your project, contact me at chris@brass9.com, and 
 
 This library is meant to run a task on a regular interval in the background of an ASP.Net app. This is a simple way to skip the install/configuration burden of a Windows Service, Task Scheduler task, or Azure Worker.
 
-In the background it uses a standard System.Timer to build a background thread running at BelowNormal priority (to avoid superseding any Request/ThreadPool threads), and runs the background task there. This ensures you can do things with the Thread like Sleep, block, and Join without concern about harming the ThreadPool or impairing the ability of the server to service requests.
+Behind the scenes this class uses a standard System.Timer to briefly wake up and build a background thread running at BelowNormal priority. Although the Timer draws on the ThreadPool, the thread it creates does not, and all work performed occurs on this standard, lower-priority thread. The lower priority prevents the background work from slowing down any Request threads. Because the work occurs on a standard thread, you can do things like block, Sleep() and Join() without concern about harming the ThreadPool or impairing the ability of the server to service requests.
 
-I've personally worked on several ASP.Net projects where this sort of long-running task was needed, and the typical answer was "Use a Windows Service; ASP.Net tasks aren't meant to run long." Inevitably configuring that Windows Service created a major configuration burden that was never sorted out properly. Two copies would end up running creating major problems in the data or overwrites, one would refuse to start because of insufficient permissions, deployment would fail because of permission problems, or someone would have to remember to login and manually install the new Service each time a deploy occurred - inevitably a missed detail resulting in old code working on data it shouldn't be.
+Skip the next paragraph if you get why a class like this would be useful.
 
-Using this library all of that goes out the window in favor of a conventional deployment. You can do a standard Publish from Visual Studio and the overwrite of Web.Config will restart the app. In a typical usage scenario, the IntervalTask is setup in Application_Start end finished in Application_End, causing it to restart when the application does (typically during a deploy).
+I've personally worked on several ASP.Net projects where this sort of long-running task was needed, and the typical answer was "Use a Windows Service; ASP.Net tasks aren't meant to run long." Inevitably configuring that Windows Service created a major configuration burden that was never sorted out properly. Two instances of the thread would end up running causing overwrites, the service refuse to start because of insufficient permissions, deployment would fail because of permission problems, or someone would have to remember to login and manually install the new Service each time a deploy occurred - inevitably a missed detail resulting in old code working on data it shouldn't be.
 
-There are 2 major caveats to this. One, ASP.Net is configured in IIS by default to recycle every 29 hours. This is easily resolved by modifying the Application Pool your app runs in to never do a timed recycle (set the interval to 0).
+Using this library all of that goes out the window in favor of a conventional deployment. You can do a standard Publish from Visual Studio and the overwrite of Web.Config will restart the app. In a typical usage scenario, the IntervalTask is setup in Application_Start and finished in Application_End, causing it to restart when the application does (typically during a deploy).
+
+There are 2 major caveats to using this class (that is, peforming background work indefinitely from inside an ASP.Net app). One, ASP.Net is configured in IIS by default to recycle every 29 hours. This is easily resolved by modifying the Application Pool your app runs in to never do a timed recycle (set the interval to 0). See also:
+
+http://haacked.com/archive/2011/10/16/the-dangers-of-implementing-recurring-background-tasks-in-asp-net.aspx 
 
 Two, the app doesn't technically start until the first request. In situations where you for example patch a server, a site with low traffic may not start for hours or even days, meaning the timer is dormant. You can resolve this with IIS 7.5 and a couple configuration tweaks:
 
 http://weblogs.asp.net/scottgu/archive/2009/09/15/auto-start-asp-net-applications-vs-2010-and-net-4-0-series.aspx
 
-Of course if you don't have access to IIS configuration or aren't using IIS 7.5, these 2 caveats may be very minor - if your site gets regular traffic, the timer will generally be running, even if it gets recycled periodically.
+Of course if you don't have access to IIS configuration or aren't using IIS 7.5, you can't take either of these steps. You're then left with 3 options:
+
+* Use something like a Service anyway - although it's likely you can't if you can't configure IIS.
+
+* Ignore it. If you have enough regular traffic, the app will generally be running, meaning so will the timer.
+
+* Write a simple task on another machine (dev machine if you have to) that just hits the servers shortly after their recycle every 29 hours to ensure the app always gets that first request promptly.
