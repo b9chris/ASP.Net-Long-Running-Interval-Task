@@ -22,14 +22,18 @@ There are 2 major caveats to using this class (that is, peforming background wor
 
 http://haacked.com/archive/2011/10/16/the-dangers-of-implementing-recurring-background-tasks-in-asp-net.aspx 
 
-Two, the app doesn't technically start until the first request. In situations where you for example patch a server, a site with low traffic may not start for hours or even days, meaning the timer is dormant. You can resolve this with IIS 7.5 and a couple configuration tweaks:
+Two, the app doesn't technically start until the first request. In situations where you for example restart a server to install a patch, a site with low traffic may not get its first visit for hours or even days, meaning the site, and the timer are dormant. You can resolve this with IIS 7.5 and a couple configuration tweaks:
 
 http://weblogs.asp.net/scottgu/archive/2009/09/15/auto-start-asp-net-applications-vs-2010-and-net-4-0-series.aspx
 
-Of course if you don't have access to IIS configuration or aren't using IIS 7.5, you can't take either of these steps. You're then left with 3 options:
+Or you could write a script that visits all of your sites when the machine boots - not a bad idea for moderate traffic sites, so the cost of first request is spent serving a page to your startup script, not an unlucky user.
 
-* Use something like a Service anyway - although it's likely you can't if you can't configure IIS.
+Of course if you don't have IIS 7.5 or the right permissions, you can't take either of these steps. You're then left with 3 options:
 
 * Ignore it. If you have enough regular traffic, the app will generally be running, meaning so will the timer.
 
-* Write a simple task on another machine (dev machine if you have to) that just hits the servers shortly after their recycle every 29 hours to ensure the app always gets that first request promptly.
+* Use something like a Service anyway - although it's likely you can't if you can't configure IIS.
+
+* Write a simple task on another machine (dev machine if you have to) that just hits the servers shortly after their recycle every 29 hours to ensure the app always gets that first request promptly. You'd want to hit it after a restart as well.
+
+IntervalTaskSample is an ASP.Net MVC 3 Razor example site using IntervalTask. It includes an example task (just a bunch of Sleep() commands), and an example of how to use the ShuttingDown flag. Visit the root page to see it run.

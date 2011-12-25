@@ -17,25 +17,41 @@ using System.Threading;
 namespace Brass9.Threading.AspNetIntervalTask
 {
 	/// <summary>
-	/// Starts a thread to perform a task at BelowNormal priority on a regular interval.
+	/// Starts a thread on a regular interval to perform a task at BelowNormal priority.
 	/// 
-	/// If the task runs longer than the timer interval, the existing thread is left be
-	/// and nothing else happens until the next time the interval fires where the worker
-	/// thread is not running.
+	/// If your task thread runs longer than the timer interval, your thread is left be
+	/// and the timer simply notices it's running and goes back to sleep. It will keep
+	/// waking up at the specified interval until the task completes. The next time it
+	/// awakes it will start the task again.
 	/// 
 	/// The task is defined as an Action&lt;IntervalTaskContext&gt;, where the argument
-	/// it takes is a context object that has a single property: the IntervalTask.
+	/// it takes is a context object that has a single property: the IntervalTask. An
+	/// example Action:
 	/// 
-	/// The task is performed on a conventional thread running at BelowNormal priority.
-	/// Because the thread is not from the ThreadPool, blocking it isn't harmful.
+	/// var task = IntervalTask.Create(context =>
+	/// {
+	///		// Do stuff in the background
+	/// });
+	/// 
+	/// Behind the scenes this class uses a standard System.Timer to briefly wake up and
+	/// build a background thread running at BelowNormal priority. Although the Timer draws
+	/// on the ThreadPool, the thread it creates does not, and all work performed occurs on
+	/// this standard, lower-priority thread. The lower priority prevents the background
+	/// work from slowing down any Request threads. Because the work occurs on a standard
+	/// thread, you can do things like block, Sleep() and Join() without concern about
+	/// harming the ThreadPool or impairing the ability of the server to service requests.
 	/// 
 	/// If the ASP.Net app needs to shut down for some reason, the timer will be stopped.
-	/// If the task is currently running, context.IntervalTask.ShuttingDown will flip to
-	/// true, and the app will be forcibly torn down by the environment in 30 seconds.
-	/// This means the task should check ShuttingDown regularly (every 5 seconds of work
+	/// If the task is currently running, it will be left be, but a property on the context
+	/// object passed into it, context.IntervalTask.ShuttingDown, will flip to true. This
+	/// signals ASP.Net is going to tear the AppDomain (and your thread with it) in 30
+	/// seconds.
+	/// 
+	/// The task should check ShuttingDown regularly (every 5 seconds of work
 	/// or so) to see if it should cut its work short. Doing so will allow you to avoid
 	/// having the thread torn down in the middle of its work, potentially corrupting
-	/// data.
+	/// data. The property is cheap (the getter just gets a bool - no hidden work) so
+	/// checking it more often isn't harmful.
 	/// 
 	/// For example, if you had a long-running task that wakes up and polls an API
 	/// endpoint for updates on local data, the combination of the web call and following
@@ -56,8 +72,8 @@ namespace Brass9.Threading.AspNetIntervalTask
 	/// Running is toggled on when the Action is entered and off when it completes. If
 	/// the Action were to actually kick off a lot of background threads and complete
 	/// before they finish, Running will be set to false when actually work is still being
-	/// performed. Using Thread.Join() or the Task Parallel Library to keep the thread
-	/// active until additional worker threads complete is recommended.
+	/// performed. Using Thread.Join() or the Task Parallel Library's .Wait() or .WaitAll()
+	/// to keep the thread active until additional worker threads complete is recommended.
 	/// 
 	/// Each time the thread is kicked off, it does so on a new thread that must be
 	/// constructed and spun up, so setting a tight interval of less than 5 seconds is
