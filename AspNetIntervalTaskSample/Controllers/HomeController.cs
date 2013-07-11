@@ -4,19 +4,19 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 
-using Brass9.Threading.AspNetIntervalTask;
+using Brass9.Threading;
 
 using AspNetIntervalTaskSample.ViewModels;
 
 
 namespace AspNetIntervalTaskSample.Controllers
 {
-    public class HomeController : Controller
-    {
-        public ActionResult Index()
-        {
-            return View();
-        }
+	public class HomeController : Controller
+	{
+		public ActionResult Index()
+		{
+			return View();
+		}
 
 		public ActionResult Stat()
 		{
@@ -41,5 +41,5 @@ namespace AspNetIntervalTaskSample.Controllers
 
 			return dateTime.ToLocalTime().ToString("h:mm:sstt").ToLower();
 		}
-    }
+	}
 }

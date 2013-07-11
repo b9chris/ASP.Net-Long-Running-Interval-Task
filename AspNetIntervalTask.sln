@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspNetIntervalTask", "AspNetIntervalTask\AspNetIntervalTask.csproj", "{E7BF40A0-95F5-402E-B557-F65B4F6F1211}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspNetIntervalTaskSample", "AspNetIntervalTaskSample\AspNetIntervalTaskSample.csproj", "{223B0533-63C4-46F6-A949-38637A03D796}"
