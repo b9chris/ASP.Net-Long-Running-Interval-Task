@@ -4,7 +4,7 @@ using System.Linq;
 using System.Web;
 using System.Threading;
 
-using Brass9.Threading.AspNetIntervalTask;
+using Brass9.Threading;
 
 
 namespace AspNetIntervalTaskSample
@@ -17,11 +17,11 @@ namespace AspNetIntervalTaskSample
 		{
 			var random = new Random();
 
-			var task = IntervalTask.CreateTask(context =>
+			var task = IntervalTask.CreateTask(() =>
 			{
 				for (int i = 0; i < 10; i++)
 				{
-					if (context.IntervalTask.ShuttingDown)
+					if (IntervalTask.Current.ShuttingDown)
 					{
 						// ASP.Net is shutting down - stop doing heavy stuff
 						// and quit out gracefully
@@ -33,16 +33,15 @@ namespace AspNetIntervalTaskSample
 					Thread.Sleep(random.Next(100, 2000));
 					App.Counter++;
 
-					// Notice that we don't have to worry about multithreading issues on
-					// these static properties because the IntervalTask guarantees there
-					// will only ever be at most one running. Not advocating static
-					// properties, just noting the threading considerations.
+					// We don't have to worry about multithreading issues on these
+					// properties because the IntervalTask guarantees there will
+					// only ever be at most one running.
 				}
 			});
 
 			// Interval is 5 seconds - a real scenario would likely be much longer,
 			// like 15 minutes
-			task.SetTimerInterval(5000);
+			task.SetInterval(5000);
 		}
 
 		public static void End()
